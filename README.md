@@ -1,2 +1,1 @@
-# echo-server-repo
-A repository for an echo server
+This repository is empty. Any task executed on it should be considered a new capability and needs to be created.
