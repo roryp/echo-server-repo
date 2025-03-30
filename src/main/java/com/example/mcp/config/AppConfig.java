@@ -1,12 +1,14 @@
 package com.example.mcp.config;
 
-import com.example.mcp.Bot;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.example.mcp.echo.Bot;
+
 import java.time.Duration;
 
 @Configuration

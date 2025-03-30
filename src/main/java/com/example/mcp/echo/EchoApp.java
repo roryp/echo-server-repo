@@ -1,4 +1,4 @@
-package com.example.mcp;
+package com.example.mcp.echo;
 
 import dev.langchain4j.mcp.McpToolProvider;
 import dev.langchain4j.mcp.client.DefaultMcpClient;

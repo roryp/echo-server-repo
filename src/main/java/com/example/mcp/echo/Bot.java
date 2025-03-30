@@ -1,4 +1,4 @@
-package com.example.mcp;
+package com.example.mcp.echo;
 
 public interface Bot {
 
