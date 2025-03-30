@@ -1,34 +1,37 @@
-# LangChain4j MCP Echo Server (Spring Boot)
+# LangChain4j MCP Echo Server with OpenAI Integration
 
-This project demonstrates a **Spring Boot Echo Server** that routes user input through a LangChain4j **MCP (Model Context Protocol)** toolchain using the official `langchain4j-mcp` integration.
+This project demonstrates a **Spring Boot Echo Server** that uses LangChain4j **MCP (Model Context Protocol)** integration with OpenAI models to process user input.
 
-It is a fully working backend that:
+*Last updated: March 30, 2025*
 
-- Exposes a simple REST API at `/echo?message=...`
-- Sends that message through the MCP toolchain
-- Uses a minimal custom MCP-compliant Docker container (echo tool)
-- Returns the same message back to the user (pure echo)
+## Overview
+
+This is a fully working backend that:
+
+- Exposes a REST API at `/echo?message=...`
+- Uses OpenAI's GPT models (currently configured with gpt-4o-mini) for processing
+- Connects to an MCP-compliant server via Server-Sent Events (SSE)
+- Processes messages through the LangChain4j toolchain
 
 ---
 
 ## Architecture Overview
 
 ### 1. Spring Boot App
-- REST controller accepts GET requests on `/echo?message=...`
+- REST controller accepts requests on `/echo?message=...`
 - Injects a `Bot` interface wired via LangChain4j's `AiServices`
-- Bot implementation is powered by a dummy `ChatLanguageModel` that uses the MCP toolchain to resolve messages
+- Bot implementation is powered by OpenAI's language model
 
 ### 2. LangChain4j MCP Integration
-- Uses `StdioMcpTransport` to launch the echo tool as a Docker container
+- Uses `HttpMcpTransport` with SSE configuration to communicate with the MCP server
 - `DefaultMcpClient` handles the JSON-RPC 2.0 message passing
-- `McpToolProvider` registers the tool with LangChain4j’s runtime
-- All user messages are routed to this registered MCP tool
+- `McpToolProvider` registers the tool with LangChain4j's runtime
+- Messages are processed by OpenAI and routed through the MCP tools
 
-### 3. MCP Echo Tool (Docker)
-A lightweight Node.js-based tool built into a Docker image that:
-- Reads JSON-RPC input from stdin
-- Parses it and echoes the input back as the result
-- Responds via stdout with proper MCP-compliant JSON
+### 3. OpenAI Integration
+- Uses `OpenAiChatModel` to process messages
+- Requires an OpenAI API key set as the `OPENAI_API_KEY` environment variable
+- Currently configured to use the `gpt-4o-mini` model
 
 ---
 
@@ -36,76 +39,115 @@ A lightweight Node.js-based tool built into a Docker image that:
 - Java 17+
 - Docker
 - Maven
-- Node.js (for building the echo tool)
+- Node.js (for the MCP server)
+- OpenAI API key
 
 ---
 
 ## How to Run
 
-### 1. Build the Docker MCP Echo Tool
+### 1. Set Up the MCP Server
 ```bash
-echo 'FROM node:alpine\nWORKDIR /app\nCOPY echo-server.js .\nCMD ["node", "echo-server.js"]' > Dockerfile
+# Clone the MCP servers repository
+git clone https://github.com/modelcontextprotocol/servers.git
+cd servers/src/everything
 
-cat <<EOF > echo-server.js
-const readline = require('readline');
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: false });
-rl.on('line', (line) => {
-  const req = JSON.parse(line);
-  console.log(JSON.stringify({ jsonrpc: "2.0", id: req.id, result: req.params.input }));
-});
-EOF
+# Install dependencies
+npm install
 
-docker build -t your-echo-tool-image .
+# Start the server in SSE mode
+node dist/sse.js
 ```
 
-### 2. Run the Spring Boot Server
+### 2. Set Your OpenAI API Key
+```bash
+# On Windows
+set OPENAI_API_KEY=your_openai_api_key_here
+
+# On Linux/macOS
+export OPENAI_API_KEY=your_openai_api_key_here
+```
+
+### 3. Run the Spring Boot Server
 ```bash
 mvn spring-boot:run
 ```
 
-### 3. Test It
+### 4. Test It
 ```bash
-curl "http://localhost:8080/echo?message=Hello%20LangChain4j"
+curl "http://localhost:8080/echo?message=Echo%20Hello%20world"
 ```
 
-Response:
-```
-Hello LangChain4j
-```
+Expected response will be the message processed through OpenAI and the MCP tool.
 
 ---
 
 ## Key Files
 
-### `EchoApplication.java`
-Bootstraps the Spring context, sets up the MCP transport, client, tool provider, and creates a LangChain4j-powered `Bot`.
+### `EchoServer.java`
+Sets up the OpenAI model, MCP transport, client, tool provider, and creates the LangChain4j-powered `Bot`.
 
 ### `Bot.java`
 Defines a single-method interface that LangChain4j implements dynamically.
 
 ### `EchoController.java`
-Handles HTTP GET requests and calls the `bot.chat(...)` method.
+Handles HTTP requests and calls the `bot.chat(...)` method.
 
-### `echo-server.js`
-A minimal MCP-compliant echo tool that reads JSON-RPC requests and returns the same string.
+---
+
+## Configuration Options
+
+### OpenAI Model
+You can adjust the model in `EchoServer.java`:
+```java
+.modelName("gpt-4o-mini") // Change to other models like "gpt-4" or "gpt-3.5-turbo"
+```
+
+### MCP Server Connection
+The SSE URL can be modified in `EchoServer.java`:
+```java
+.sseUrl("http://localhost:3001/sse") // Change port or host as needed
+.timeout(Duration.ofSeconds(60)) // Adjust timeout if needed
+```
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+1. **OpenAI API Authentication Errors**
+   - Verify your API key is set correctly in the environment
+   - Check if your API key has sufficient permissions
+
+2. **MCP Server Connection Issues**
+   - Ensure the MCP server is running at the configured address
+   - Check the logs for connection timeouts or errors
+   - Verify your network allows the connection
+
+3. **Response Timeouts**
+   - The default timeout is 60 seconds; increase if necessary for complex queries
 
 ---
 
 ## Why MCP?
-MCP allows tool-like interactions from LLM or agent-like wrappers while delegating execution to external services over standard protocols. In this case, we just use MCP as a transport mechanism to demonstrate integration with external tools (even a trivial one like echo). This mirrors how your team might use tools like GitHub agents, file analysis tools, or CLI utilities.
+The Model Context Protocol (MCP) allows language models to use external tools via a standardized interface. This integration enables your application to leverage both the power of OpenAI's language models and external tools defined in the MCP server.
 
 ---
 
 ## Credits
 - [LangChain4j](https://github.com/langchain4j/langchain4j)
-- Based on [langchain4j-mcp](https://github.com/langchain4j/langchain4j/tree/main/langchain4j-mcp)
+- [Model Context Protocol](https://github.com/modelcontextprotocol)
+- [OpenAI](https://openai.com/)
 
 ---
 
-Let me know if you want this extended with actual OpenAI/GPT integration or multi-step agents!
+## Next Steps
+- Implement custom MCP tools for specialized functionality
+- Add support for streaming responses
+- Create more sophisticated agent workflows using LangChain4j
 
+---
 
-Done! I’ve added a polished and complete explanation to the top of the file—perfect for a GitHub README. It walks through the architecture, setup steps, MCP echo tool, and the rationale behind the design.
-
-Let me know if you’d like this extracted as a separate README.md, or want me to generate a GitHub Actions workflow or Docker Compose file to support this.
+If you have any questions or need assistance, please open an issue in this repository.
 
