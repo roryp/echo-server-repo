@@ -70,10 +70,27 @@ export OPENAI_API_KEY=your_openai_api_key_here
 
 ### 3. Run the Spring Boot Server
 ```bash
+# Option 1: Run with Maven
 mvn spring-boot:run
+
+# Option 2: Run the JAR file directly
+java -jar target/echo-1.0-SNAPSHOT.jar
 ```
 
-### 4. Test It
+### 4. Docker Deployment
+You can also run the application using Docker:
+
+```bash
+# Build the Docker image
+docker build -t echo-server:latest .
+
+# Run the container with your API key
+docker run -p 8080:8080 -e OPENAI_API_KEY=your_openai_api_key_here echo-server:latest
+```
+
+Make sure the MCP server is accessible from within the Docker container. You may need to use host networking or adjust the MCP server URL in the configuration.
+
+### 5. Test It
 ```bash
 curl "http://localhost:8080/echo?message=Echo%20Hello%20world"
 ```
@@ -92,6 +109,9 @@ Defines a single-method interface that LangChain4j implements dynamically.
 
 ### `EchoController.java`
 Handles HTTP requests and calls the `bot.chat(...)` method.
+
+### `EchoServerController.java`
+Provides additional endpoints for server management and health checks.
 
 ---
 
@@ -119,14 +139,59 @@ The SSE URL can be modified in `EchoServer.java`:
 1. **OpenAI API Authentication Errors**
    - Verify your API key is set correctly in the environment
    - Check if your API key has sufficient permissions
+   - Ensure your API key has not expired or been revoked
 
 2. **MCP Server Connection Issues**
    - Ensure the MCP server is running at the configured address
    - Check the logs for connection timeouts or errors
    - Verify your network allows the connection
+   - If running in Docker, make sure the container can reach the MCP server
 
 3. **Response Timeouts**
    - The default timeout is 60 seconds; increase if necessary for complex queries
+   - Consider using a more powerful OpenAI model for faster processing
+
+4. **Java Memory Issues**
+   - If you encounter `OutOfMemoryError`, adjust the JVM heap size with `-Xmx` flag
+   - For Docker deployments, ensure the container has sufficient memory allocation
+
+5. **Spring Boot Application Issues**
+   - Check application logs for detailed error messages
+   - Verify all required dependencies are in the pom.xml
+   - Ensure the application port (default 8080) is not already in use
+
+---
+
+## Performance Tuning
+
+For improved performance in production environments:
+
+1. **OpenAI Model Selection**
+   - Balance speed vs. capability by choosing the appropriate model
+   - For high-traffic applications, consider using faster, smaller models
+
+2. **Connection Pooling**
+   - Configure appropriate HTTP connection pool sizes for OpenAI API calls
+
+3. **Caching**
+   - Implement response caching for frequently repeated queries
+   - Consider using Spring Cache or a distributed cache like Redis
+
+---
+
+## Contributing
+
+Contributions to improve the Echo Server are welcome! Here's how to contribute:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Implement your changes
+4. Add tests if applicable
+5. Commit your changes (`git commit -m 'Add some amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+Please ensure your code follows the existing style and includes appropriate documentation.
 
 ---
 
@@ -146,6 +211,8 @@ The Model Context Protocol (MCP) allows language models to use external tools vi
 - Implement custom MCP tools for specialized functionality
 - Add support for streaming responses
 - Create more sophisticated agent workflows using LangChain4j
+- Develop a frontend UI for interacting with the Echo Server
+- Implement user authentication and rate limiting
 
 ---
 

@@ -13,7 +13,7 @@ import dev.langchain4j.service.tool.ToolProvider;
 import java.time.Duration;
 import java.util.List;
 
-public class EchoServer {
+public class EchoApp {
 
     /**
      * This example uses the `server-everything` MCP server that showcases some aspects of the MCP protocol.
