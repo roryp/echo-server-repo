@@ -1,6 +1,9 @@
-FROM eclipse-temurin:21-jre-alpine
+FROM openjdk:21-jdk-slim
 
-ARG JAR_FILE=target/echo-1.0-SNAPSHOT.jar
-COPY ${JAR_FILE} app.jar
+WORKDIR /app
 
-ENTRYPOINT ["java","-jar","/app.jar"]
+COPY target/echo-1.0-SNAPSHOT.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
